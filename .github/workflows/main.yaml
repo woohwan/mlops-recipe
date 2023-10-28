@@ -1,0 +1,54 @@
+name: main x86
+
+on:
+  push:
+    branches: [ main ]
+  
+  # run manually
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: checkout
+        uses: actions/checkout@v4.1.1
+
+      - name: setup python 3.11 env
+        uses: actions/setup-python@v4.7.1
+        with:
+          python-version: 3.11
+        
+      - name: install dependency
+        run: make install
+
+      - name: run linter
+        run: make lint
+
+      - name: execute test
+        run: make test
+      
+      - name: format code
+        run: make format
+    
+  build-container:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4.1.1
+
+      - name: login to docker hub
+        uses: docker/login-action@v3.0.0
+        with:
+          username: woohwan
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: login to github container registry
+        uses: docker/login-action@v3.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GH_CONTAINER_REGISTRY }}
+
+
