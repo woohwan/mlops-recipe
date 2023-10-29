@@ -80,7 +80,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            woohwan/mlops-recipe_x86:v1
+            whpark70/mlops-recipe_x86:v1
             ghcr.io/woohwan/mlops-recipe_x86:v1
             532805286864.dkr.ecr.ap-northeast-2.amazonaws.com/mlops-recipe_x86:v1
 
