@@ -12,43 +12,79 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - name: checkout
+      - name: 체크아웃
         uses: actions/checkout@v4.1.1
 
-      - name: setup python 3.11 env
+      - name: 파이썬 3.11 환경 구축
         uses: actions/setup-python@v4.7.1
         with:
           python-version: 3.11
         
-      - name: install dependency
+      - name: 의존성 설치
         run: make install
 
-      - name: run linter
+      - name: 린터 실행
         run: make lint
 
-      - name: execute test
+      - name: 테스트 실행
         run: make test
       
-      - name: format code
+      - name: 코드 포맷팅
         run: make format
-    
+
+  # https://docs.docker.com/build/ci/github-actions/push-multi-registries/
   build-container:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v4.1.1
+      - name: 체크아웃
+        uses: actions/checkout@v4
 
-      - name: login to docker hub
-        uses: docker/login-action@v3.0.0
+      # installs QEMU static binaries for multi-arch builds.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Docker buildx 설정
+        uses: docker/setup-buildx-action@v3
+
+      - name: 도커 허브 로그인
+        uses: docker/login-action@v3
         with:
-          username: woohwan
+          username: whpark70
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: login to github container registry
-        uses: docker/login-action@v3.0.0
+      - name: 깃허브 컨테이너 레지스터리 로그인
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GH_CONTAINER_REGISTRY }}
+      
+      # https://github.com/docker/build-push-action#path-context
+      - name: AWS 로그인
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # AWS Region, e.g. us-east-2
+          aws-region: ap-northeast-2
+          # AWS Access Key ID. Provide this key if you want to assume a role using access keys rather than a web identity token.
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          # AWS Secret Access Key. Required if aws-access-key-id is provided.
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: AWS ECR 로그인
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: 컨테이너 빌드 후 도커 허브, 깃허브 레지스트리, AWS ECR에 동시에 푸시
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            woohwan/mlops-recipe_x86:v1
+            ghcr.io/woohwan/mlops-recipe_x86:v1
+            532805286864.dkr.ecr.ap-northeast-2.amazonaws.com/mlops-recipe_x86:v1
+
+
+        
 
 
